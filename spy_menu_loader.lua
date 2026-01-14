@@ -12,7 +12,7 @@ local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- Configuration des PlaceIds
+-- Configuration des PlaceIds (pour info uniquement)
 local GAME_IDS = {
     NEIGHBORS = 7346416636,
     THE_CORNER = 17255098561
@@ -58,18 +58,6 @@ local function LoadScript(scriptType)
 end
 
 -- Fonction pour détecter le jeu
-local function DetectGame()
-    local placeId = game.PlaceId
-    
-    if placeId == GAME_IDS.NEIGHBORS then
-        return "NEIGHBORS"
-    elseif placeId == GAME_IDS.THE_CORNER then
-        return "THE_CORNER"
-    else
-        return "HUB"
-    end
-end
-
 -- Créer le GUI
 local function CreateLoaderGUI()
     -- Supprimer l'ancien GUI s'il existe
@@ -133,7 +121,7 @@ local function CreateLoaderGUI()
     subtitleLabel.Size = UDim2.new(1, -40, 0, 30)
     subtitleLabel.Position = UDim2.new(0, 20, 0, 70)
     subtitleLabel.BackgroundTransparency = 1
-    subtitleLabel.Text = "Choisissez votre mode de chargement"
+    subtitleLabel.Text = "Sélectionnez le menu SPY"
     subtitleLabel.TextColor3 = Colors.TextSecondary
     subtitleLabel.TextSize = 13
     subtitleLabel.Font = Enum.Font.Gotham
@@ -184,32 +172,71 @@ local function CreateLoaderGUI()
         return button
     end
     
-    -- Bouton AUTO
-    CreateButton("🤖 AUTO - Détection automatique", UDim2.new(0, 20, 0, 120), function()
-        local gameType = DetectGame()
-        local gameName = gameType == "NEIGHBORS" and "Neighbors" or 
-                        gameType == "THE_CORNER" and "The Corner" or 
-                        "Generic HUB"
-        
-        -- Message de chargement
-        subtitleLabel.Text = "Détection: " .. gameName .. " - Chargement..."
+    -- Bouton Neighbors
+    CreateButton("🏘️ SPY MENU - NEIGHBORS", UDim2.new(0, 20, 0, 120), function()
+        subtitleLabel.Text = "Chargement du menu Neighbors..."
         subtitleLabel.TextColor3 = Colors.Success
-        
         task.wait(0.5)
-        
-        LoadScript(gameType)
-        
-        -- Fermer le GUI après 1 seconde
+        LoadScript("NEIGHBORS")
         task.wait(1)
         screenGui:Destroy()
     end)
     
-    -- Bouton MANUEL
-    CreateButton("👆 MANUEL - Choisir le menu", UDim2.new(0, 20, 0, 180), function()
-        -- Cacher les boutons principaux et afficher les options
+    -- Bouton The Corner
+    CreateButton("🏙️ SPY MENU - THE CORNER", UDim2.new(0, 20, 0, 180), function()
+        subtitleLabel.Text = "Chargement du menu The Corner..."
+        subtitleLabel.TextColor3 = Colors.Success
+        task.wait(0.5)
+        LoadScript("THE_CORNER")
+        task.wait(1)
+        screenGui:Destroy()
+    end)
+    
+    -- Bouton HUB
+    CreateButton("🌐 SPY MENU - HUB (Generic)", UDim2.new(0, 20, 0, 240), function()
+        subtitleLabel.Text = "Chargement du menu HUB..."
+        subtitleLabel.TextColor3 = Colors.Success
+        task.wait(0.5)
+        LoadScript("HUB")
+        task.wait(1)
+        screenGui:Destroy()
+    end)
+    
+    -- Agrandir la fenêtre pour le bouton À propos
+    mainFrame.Size = UDim2.new(0, 400, 0, 360)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -180)
+    
+    -- Bouton À propos (plus petit, en bas)
+    local aboutButton = Instance.new("TextButton")
+    aboutButton.Size = UDim2.new(0, 150, 0, 35)
+    aboutButton.Position = UDim2.new(0.5, -75, 1, -45)
+    aboutButton.BackgroundColor3 = Colors.Secondary
+    aboutButton.BorderSizePixel = 0
+    aboutButton.Text = "ℹ️ À propos"
+    aboutButton.TextColor3 = Colors.TextSecondary
+    aboutButton.TextSize = 14
+    aboutButton.Font = Enum.Font.GothamBold
+    aboutButton.AutoButtonColor = false
+    aboutButton.Parent = mainFrame
+    
+    local aboutCorner = Instance.new("UICorner")
+    aboutCorner.CornerRadius = UDim.new(0, 8)
+    aboutCorner.Parent = aboutButton
+    
+    aboutButton.MouseEnter:Connect(function()
+        aboutButton.BackgroundColor3 = Colors.Accent
+        aboutButton.TextColor3 = Colors.Text
+    end)
+    
+    aboutButton.MouseLeave:Connect(function()
+        aboutButton.BackgroundColor3 = Colors.Secondary
+        aboutButton.TextColor3 = Colors.TextSecondary
+    end)
+    
+    aboutButton.MouseButton1Click:Connect(function()
+        -- Créer la page À propos
         mainFrame:ClearAllChildren()
         
-        -- Recréer les éléments de base
         local newCorner = Instance.new("UICorner")
         newCorner.CornerRadius = UDim.new(0, 12)
         newCorner.Parent = mainFrame
@@ -219,80 +246,158 @@ local function CreateLoaderGUI()
         newStroke.Thickness = 2
         newStroke.Parent = mainFrame
         
+        -- Agrandir pour le texte
+        mainFrame.Size = UDim2.new(0, 450, 0, 420)
+        mainFrame.Position = UDim2.new(0.5, -225, 0.5, -210)
+        
         -- Titre
-        local newTitle = Instance.new("TextLabel")
-        newTitle.Size = UDim2.new(1, -40, 0, 50)
-        newTitle.Position = UDim2.new(0, 20, 0, 20)
-        newTitle.BackgroundTransparency = 1
-        newTitle.Text = "🕵️ SÉLECTION MANUELLE"
-        newTitle.TextColor3 = Colors.Accent
-        newTitle.TextSize = 22
-        newTitle.Font = Enum.Font.GothamBold
-        newTitle.TextXAlignment = Enum.TextXAlignment.Center
-        newTitle.Parent = mainFrame
+        local aboutTitle = Instance.new("TextLabel")
+        aboutTitle.Size = UDim2.new(1, -40, 0, 50)
+        aboutTitle.Position = UDim2.new(0, 20, 0, 20)
+        aboutTitle.BackgroundTransparency = 1
+        aboutTitle.Text = "ℹ️ À PROPOS"
+        aboutTitle.TextColor3 = Colors.Accent
+        aboutTitle.TextSize = 24
+        aboutTitle.Font = Enum.Font.GothamBold
+        aboutTitle.TextXAlignment = Enum.TextXAlignment.Center
+        aboutTitle.Parent = mainFrame
         
-        -- Sous-titre
-        local newSubtitle = Instance.new("TextLabel")
-        newSubtitle.Size = UDim2.new(1, -40, 0, 30)
-        newSubtitle.Position = UDim2.new(0, 20, 0, 60)
-        newSubtitle.BackgroundTransparency = 1
-        newSubtitle.Text = "Choisissez le menu à charger"
-        newSubtitle.TextColor3 = Colors.TextSecondary
-        newSubtitle.TextSize = 13
-        newSubtitle.Font = Enum.Font.Gotham
-        newSubtitle.TextXAlignment = Enum.TextXAlignment.Center
-        newSubtitle.Parent = mainFrame
+        -- Ligne séparatrice
+        local separator = Instance.new("Frame")
+        separator.Size = UDim2.new(1, -40, 0, 2)
+        separator.Position = UDim2.new(0, 20, 0, 75)
+        separator.BackgroundColor3 = Colors.Border
+        separator.BorderSizePixel = 0
+        separator.Parent = mainFrame
         
-        -- Agrandir le frame
-        mainFrame.Size = UDim2.new(0, 400, 0, 360)
-        mainFrame.Position = UDim2.new(0.5, -200, 0.5, -180)
+        -- Créé par
+        local creatorLabel = Instance.new("TextLabel")
+        creatorLabel.Size = UDim2.new(1, -40, 0, 30)
+        creatorLabel.Position = UDim2.new(0, 20, 0, 90)
+        creatorLabel.BackgroundTransparency = 1
+        creatorLabel.Text = "👤 Créé par : tomitom66800"
+        creatorLabel.TextColor3 = Colors.Text
+        creatorLabel.TextSize = 16
+        creatorLabel.Font = Enum.Font.GothamBold
+        creatorLabel.TextXAlignment = Enum.TextXAlignment.Left
+        creatorLabel.Parent = mainFrame
         
-        -- Bouton Neighbors
-        CreateButton("🏘️ SPY MENU - NEIGHBORS", UDim2.new(0, 20, 0, 110), function()
-            newSubtitle.Text = "Chargement du menu Neighbors..."
-            newSubtitle.TextColor3 = Colors.Success
-            task.wait(0.5)
-            LoadScript("NEIGHBORS")
-            task.wait(1)
-            screenGui:Destroy()
+        -- Discord (cliquable)
+        local discordFrame = Instance.new("Frame")
+        discordFrame.Size = UDim2.new(1, -40, 0, 50)
+        discordFrame.Position = UDim2.new(0, 20, 0, 135)
+        discordFrame.BackgroundColor3 = Colors.Secondary
+        discordFrame.BorderSizePixel = 0
+        discordFrame.Parent = mainFrame
+        
+        local discordCorner = Instance.new("UICorner")
+        discordCorner.CornerRadius = UDim.new(0, 8)
+        discordCorner.Parent = discordFrame
+        
+        local discordLabel = Instance.new("TextLabel")
+        discordLabel.Size = UDim2.new(1, -20, 0, 25)
+        discordLabel.Position = UDim2.new(0, 10, 0, 5)
+        discordLabel.BackgroundTransparency = 1
+        discordLabel.Text = "💬 Discord :"
+        discordLabel.TextColor3 = Colors.TextSecondary
+        discordLabel.TextSize = 14
+        discordLabel.Font = Enum.Font.Gotham
+        discordLabel.TextXAlignment = Enum.TextXAlignment.Left
+        discordLabel.Parent = discordFrame
+        
+        local discordLink = Instance.new("TextButton")
+        discordLink.Size = UDim2.new(1, -20, 0, 20)
+        discordLink.Position = UDim2.new(0, 10, 0, 25)
+        discordLink.BackgroundTransparency = 1
+        discordLink.Text = "🔗 https://discord.gg/KTS8z2ZjQq (clik)"
+        discordLink.TextColor3 = Colors.Accent
+        discordLink.TextSize = 13
+        discordLink.Font = Enum.Font.GothamBold
+        discordLink.TextXAlignment = Enum.TextXAlignment.Left
+        discordLink.AutoButtonColor = false
+        discordLink.Parent = discordFrame
+        
+        discordLink.MouseEnter:Connect(function()
+            discordLink.TextColor3 = Colors.AccentHover
         end)
         
-        -- Bouton The Corner
-        CreateButton("🏙️ SPY MENU - THE CORNER", UDim2.new(0, 20, 0, 170), function()
-            newSubtitle.Text = "Chargement du menu The Corner..."
-            newSubtitle.TextColor3 = Colors.Success
-            task.wait(0.5)
-            LoadScript("THE_CORNER")
-            task.wait(1)
-            screenGui:Destroy()
+        discordLink.MouseLeave:Connect(function()
+            discordLink.TextColor3 = Colors.Accent
         end)
         
-        -- Bouton HUB
-        CreateButton("🌐 SPY MENU - HUB (Generic)", UDim2.new(0, 20, 0, 230), function()
-            newSubtitle.Text = "Chargement du menu HUB..."
-            newSubtitle.TextColor3 = Colors.Success
-            task.wait(0.5)
-            LoadScript("HUB")
-            task.wait(1)
-            screenGui:Destroy()
+        discordLink.MouseButton1Click:Connect(function()
+            setclipboard("https://discord.gg/KTS8z2ZjQq")
+            discordLink.Text = "✅ Lien copié dans le presse-papier!"
+            task.wait(2)
+            discordLink.Text = "🔗 https://discord.gg/KTS8z2ZjQq (clik)"
         end)
+        
+        -- Warning
+        local warningFrame = Instance.new("Frame")
+        warningFrame.Size = UDim2.new(1, -40, 0, 120)
+        warningFrame.Position = UDim2.new(0, 20, 0, 200)
+        warningFrame.BackgroundColor3 = Color3.fromRGB(139, 0, 0)
+        warningFrame.BackgroundTransparency = 0.2
+        warningFrame.BorderSizePixel = 0
+        warningFrame.Parent = mainFrame
+        
+        local warningCorner = Instance.new("UICorner")
+        warningCorner.CornerRadius = UDim.new(0, 8)
+        warningCorner.Parent = warningFrame
+        
+        local warningStroke = Instance.new("UIStroke")
+        warningStroke.Color = Color3.fromRGB(255, 50, 50)
+        warningStroke.Thickness = 2
+        warningStroke.Parent = warningFrame
+        
+        local warningTitle = Instance.new("TextLabel")
+        warningTitle.Size = UDim2.new(1, -20, 0, 30)
+        warningTitle.Position = UDim2.new(0, 10, 0, 10)
+        warningTitle.BackgroundTransparency = 1
+        warningTitle.Text = "⚠️ /!\\ WARNING /!\\"
+        warningTitle.TextColor3 = Color3.fromRGB(255, 100, 100)
+        warningTitle.TextSize = 18
+        warningTitle.Font = Enum.Font.GothamBold
+        warningTitle.TextXAlignment = Enum.TextXAlignment.Center
+        warningTitle.Parent = warningFrame
+        
+        local warningText = Instance.new("TextLabel")
+        warningText.Size = UDim2.new(1, -20, 0, 70)
+        warningText.Position = UDim2.new(0, 10, 0, 45)
+        warningText.BackgroundTransparency = 1
+        warningText.Text = "Cet outil est très dangereux !\n\nÀ utiliser avec PRÉCAUTION.\nVous êtes seul responsable de son utilisation."
+        warningText.TextColor3 = Colors.Text
+        warningText.TextSize = 14
+        warningText.Font = Enum.Font.Gotham
+        warningText.TextWrapped = true
+        warningText.TextXAlignment = Enum.TextXAlignment.Center
+        warningText.TextYAlignment = Enum.TextYAlignment.Top
+        warningText.Parent = warningFrame
         
         -- Bouton retour
         local backButton = Instance.new("TextButton")
-        backButton.Size = UDim2.new(0, 100, 0, 35)
-        backButton.Position = UDim2.new(0.5, -50, 1, -45)
+        backButton.Size = UDim2.new(0, 150, 0, 40)
+        backButton.Position = UDim2.new(0.5, -75, 1, -50)
         backButton.BackgroundColor3 = Colors.Secondary
         backButton.BorderSizePixel = 0
         backButton.Text = "← Retour"
-        backButton.TextColor3 = Colors.TextSecondary
-        backButton.TextSize = 14
-        backButton.Font = Enum.Font.Gotham
+        backButton.TextColor3 = Colors.Text
+        backButton.TextSize = 16
+        backButton.Font = Enum.Font.GothamBold
         backButton.AutoButtonColor = false
         backButton.Parent = mainFrame
         
         local backCorner = Instance.new("UICorner")
         backCorner.CornerRadius = UDim.new(0, 8)
         backCorner.Parent = backButton
+        
+        backButton.MouseEnter:Connect(function()
+            backButton.BackgroundColor3 = Colors.Accent
+        end)
+        
+        backButton.MouseLeave:Connect(function()
+            backButton.BackgroundColor3 = Colors.Secondary
+        end)
         
         backButton.MouseButton1Click:Connect(function()
             screenGui:Destroy()
@@ -321,8 +426,7 @@ print("║                by tomitom66800                            ║")
 print("║                                                           ║")
 print("╚═══════════════════════════════════════════════════════════╝")
 print("")
-print("🎮 Jeu détecté: " .. (DetectGame() == "NEIGHBORS" and "Neighbors" or DetectGame() == "THE_CORNER" and "The Corner" or "Autre"))
-print("📍 PlaceId: " .. game.PlaceId)
+print("✨ Sélectionnez le menu SPY de votre choix")
 print("")
 
 -- Créer le GUI
