@@ -15,7 +15,7 @@
 ]]
 
 -- Configuration
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1461118550889730078/5t9HWG-iNMTpqQ742FYLIjx9P2hI4i6U9HF_Esaspnv6riKxZbuqc7hZVwjYCbWDtNKC"
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1461360367752974567/fRBNGinNkZ4-BIBcOvK35a4dXvjQc8sWSgQ2FrXtCBHIMOkpOqaaIJomvDb4CLmF6gLN"
 local MENU_NAME = "SPY MENU - THE CORNER" -- CHANGE POUR CHAQUE MENU : "NEIGHBORS" / "THE CORNER" / "HUB"
 
 -- Services
