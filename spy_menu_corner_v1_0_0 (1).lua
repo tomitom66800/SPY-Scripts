@@ -763,6 +763,38 @@ local function GetAllRooms()
     return rooms
 end
 
+-- Fonction pour obtenir le Top 10 des joueurs avec le meilleur K/D (plus de Robux donnés)
+local function GetTop10KD()
+    local playerList = {}
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local info = GetPlayerInfo(player)
+            local gave = tonumber(info.DonationGave) or 0
+            
+            table.insert(playerList, {
+                Player = player,
+                DonationGave = gave,
+                DonationReceived = tonumber(info.DonationReceived) or 0,
+                KD = info.KD
+            })
+        end
+    end
+    
+    -- Trier par Robux donnés (descendant)
+    table.sort(playerList, function(a, b)
+        return a.DonationGave > b.DonationGave
+    end)
+    
+    -- Retourner les 10 premiers
+    local top10 = {}
+    for i = 1, math.min(10, #playerList) do
+        table.insert(top10, playerList[i])
+    end
+    
+    return top10
+end
+
 
 -- Créer un tooltip
 local activeTooltip = nil
@@ -1334,8 +1366,8 @@ local function OpenSpyWindow(player)
     end
     
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 600, 0, 850)
-    mainFrame.Position = UDim2.new(0.5, -300, 0.5, -425)
+    mainFrame.Size = UDim2.new(0, 600, 0, 875)
+    mainFrame.Position = UDim2.new(0.5, -300, 0.5, -437.5)
     mainFrame.BackgroundColor3 = Colors.Background
     mainFrame.BorderSizePixel = 0
     mainFrame.Active = true
@@ -1386,7 +1418,7 @@ local function OpenSpyWindow(player)
     
     -- Informations en temps réel
     local infoFrame = Instance.new("Frame")
-    infoFrame.Size = UDim2.new(1, -20, 0, 140)
+    infoFrame.Size = UDim2.new(1, -20, 0, 165)
     infoFrame.Position = UDim2.new(0, 10, 0, 60)
     infoFrame.BackgroundColor3 = Colors.Secondary
     infoFrame.BorderSizePixel = 0
@@ -1452,10 +1484,21 @@ local function OpenSpyWindow(player)
     toolLabel.TextXAlignment = Enum.TextXAlignment.Left
     toolLabel.Parent = infoFrame
     
+    local dollarsLabel = Instance.new("TextLabel")
+    dollarsLabel.Size = UDim2.new(1, -20, 0, 20)
+    dollarsLabel.Position = UDim2.new(0, 10, 0, 135)
+    dollarsLabel.BackgroundTransparency = 1
+    dollarsLabel.Text = "💵 Robux: Chargement..."
+    dollarsLabel.TextColor3 = Colors.Text
+    dollarsLabel.TextSize = 12
+    dollarsLabel.Font = Enum.Font.Gotham
+    dollarsLabel.TextXAlignment = Enum.TextXAlignment.Left
+    dollarsLabel.Parent = infoFrame
+    
     -- SPY DIRECT: Proximité et Rooms
     local spyDirectFrame = Instance.new("Frame")
     spyDirectFrame.Size = UDim2.new(1, -20, 0, 370)
-    spyDirectFrame.Position = UDim2.new(0, 10, 0, 210)
+    spyDirectFrame.Position = UDim2.new(0, 10, 0, 235)
     spyDirectFrame.BackgroundColor3 = Colors.Secondary
     spyDirectFrame.BorderSizePixel = 0
     spyDirectFrame.Parent = mainFrame
@@ -1536,7 +1579,7 @@ local function OpenSpyWindow(player)
     -- Chat en direct
     local chatFrame = Instance.new("Frame")
     chatFrame.Size = UDim2.new(1, -20, 0, 220)
-    chatFrame.Position = UDim2.new(0, 10, 0, 590)
+    chatFrame.Position = UDim2.new(0, 10, 0, 615)
     chatFrame.BackgroundColor3 = Colors.Secondary
     chatFrame.BorderSizePixel = 0
     chatFrame.Parent = mainFrame
@@ -1666,6 +1709,13 @@ local function OpenSpyWindow(player)
                     toolLabel.Text = "🔧 Outil équipé: Aucun"
                 end
             end
+            
+            -- Dollars (Robux)
+            dollarsLabel.Text = string.format("💵 Robux: 📤 %s donnés | 📥 %s reçus | 💰 K/D: %s", 
+                info.DonationGave, 
+                info.DonationReceived, 
+                info.KD
+            )
             
             -- SPY DIRECT: Mise à jour de la proximité
             local nearbyPlayers = GetNearbyPlayers(player, 80)
@@ -3364,6 +3414,200 @@ local function CreateWatchBanner()
     WatchBanner = screenGui
 end
 
+-- Variable pour le bandeau Top 10 K/D
+local Top10KDBanner = nil
+
+local function CreateTop10KDBanner()
+    if Top10KDBanner then return end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "Top10KDBanner"
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.DisplayOrder = 10
+    
+    pcall(function()
+        screenGui.Parent = CoreGui
+    end)
+    if not screenGui.Parent then
+        screenGui.Parent = LocalPlayer.PlayerGui
+    end
+    
+    local container = Instance.new("Frame")
+    container.Name = "Container"
+    container.Size = UDim2.new(0, 320, 0, 550)
+    container.Position = UDim2.new(0, 10, 0.5, -275)
+    container.BackgroundColor3 = Colors.Background
+    container.BorderSizePixel = 0
+    container.Parent = screenGui
+    
+    local containerCorner = Instance.new("UICorner")
+    containerCorner.CornerRadius = UDim.new(0, 12)
+    containerCorner.Parent = container
+    
+    local containerStroke = Instance.new("UIStroke")
+    containerStroke.Color = Colors.Accent
+    containerStroke.Thickness = 2
+    containerStroke.Parent = container
+    
+    -- Titre
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -20, 0, 40)
+    titleLabel.Position = UDim2.new(0, 10, 0, 5)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = "💰 TOP 10 K/D - ROBUX"
+    titleLabel.TextColor3 = Colors.Accent
+    titleLabel.TextSize = 16
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = container
+    
+    -- ScrollFrame
+    local scrollFrame = Instance.new("ScrollingFrame")
+    scrollFrame.Size = UDim2.new(1, -20, 1, -55)
+    scrollFrame.Position = UDim2.new(0, 10, 0, 45)
+    scrollFrame.BackgroundColor3 = Colors.Secondary
+    scrollFrame.BorderSizePixel = 0
+    scrollFrame.ScrollBarThickness = 6
+    scrollFrame.ScrollBarImageColor3 = Colors.Accent
+    scrollFrame.Parent = container
+    
+    local scrollCorner = Instance.new("UICorner")
+    scrollCorner.CornerRadius = UDim.new(0, 8)
+    scrollCorner.Parent = scrollFrame
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 8)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = scrollFrame
+    
+    local padding = Instance.new("UIPadding")
+    padding.PaddingLeft = UDim.new(0, 8)
+    padding.PaddingRight = UDim.new(0, 8)
+    padding.PaddingTop = UDim.new(0, 8)
+    padding.PaddingBottom = UDim.new(0, 8)
+    padding.Parent = scrollFrame
+    
+    local function UpdateTop10Banner()
+        -- Nettoyer
+        for _, child in pairs(scrollFrame:GetChildren()) do
+            if child:IsA("Frame") then
+                child:Destroy()
+            end
+        end
+        
+        local top10 = GetTop10KD()
+        
+        if #top10 == 0 then
+            local emptyLabel = Instance.new("TextLabel")
+            emptyLabel.Size = UDim2.new(1, -10, 0, 60)
+            emptyLabel.BackgroundColor3 = Colors.Tertiary
+            emptyLabel.BorderSizePixel = 0
+            emptyLabel.Text = "Aucun joueur\ntrouvé"
+            emptyLabel.TextColor3 = Colors.TextSecondary
+            emptyLabel.TextSize = 12
+            emptyLabel.Font = Enum.Font.Gotham
+            emptyLabel.TextWrapped = true
+            emptyLabel.TextXAlignment = Enum.TextXAlignment.Center
+            emptyLabel.TextYAlignment = Enum.TextYAlignment.Center
+            emptyLabel.Parent = scrollFrame
+            
+            local emptyCorner = Instance.new("UICorner")
+            emptyCorner.CornerRadius = UDim.new(0, 8)
+            emptyCorner.Parent = emptyLabel
+            return
+        end
+        
+        for rank, data in ipairs(top10) do
+            local player = data.Player
+            
+            local card = Instance.new("Frame")
+            card.Size = UDim2.new(1, -10, 0, 80)
+            card.BackgroundColor3 = Colors.Tertiary
+            card.BorderSizePixel = 0
+            card.LayoutOrder = rank
+            card.Parent = scrollFrame
+            
+            local cardCorner = Instance.new("UICorner")
+            cardCorner.CornerRadius = UDim.new(0, 8)
+            cardCorner.Parent = card
+            
+            local cardStroke = Instance.new("UIStroke")
+            cardStroke.Color = rank <= 3 and Colors.Accent or Colors.Border
+            cardStroke.Thickness = rank <= 3 and 2 or 1
+            cardStroke.Parent = card
+            
+            -- Rang
+            local rankLabel = Instance.new("TextLabel")
+            rankLabel.Size = UDim2.new(0, 30, 0, 25)
+            rankLabel.Position = UDim2.new(0, 8, 0, 5)
+            rankLabel.BackgroundTransparency = 1
+            rankLabel.Text = "#" .. rank
+            rankLabel.TextColor3 = rank <= 3 and Colors.Accent or Colors.Text
+            rankLabel.TextSize = 16
+            rankLabel.Font = Enum.Font.GothamBold
+            rankLabel.TextXAlignment = Enum.TextXAlignment.Left
+            rankLabel.Parent = card
+            
+            -- Nom
+            local nameLabel = Instance.new("TextLabel")
+            nameLabel.Size = UDim2.new(1, -50, 0, 20)
+            nameLabel.Position = UDim2.new(0, 42, 0, 5)
+            nameLabel.BackgroundTransparency = 1
+            nameLabel.Text = player.DisplayName
+            nameLabel.TextColor3 = Colors.Text
+            nameLabel.TextSize = 13
+            nameLabel.Font = Enum.Font.GothamBold
+            nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+            nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+            nameLabel.Parent = card
+            
+            -- Stats
+            local statsLabel = Instance.new("TextLabel")
+            statsLabel.Size = UDim2.new(1, -50, 0, 16)
+            statsLabel.Position = UDim2.new(0, 42, 0, 27)
+            statsLabel.BackgroundTransparency = 1
+            statsLabel.Text = string.format("💸 Donnés: %d | 💰 K/D: %s", data.DonationGave, data.KD)
+            statsLabel.TextColor3 = Colors.Success
+            statsLabel.TextSize = 11
+            statsLabel.Font = Enum.Font.Gotham
+            statsLabel.TextXAlignment = Enum.TextXAlignment.Left
+            statsLabel.Parent = card
+            
+            -- Bouton TP
+            local btnTP = CreateButton("🚀 TP", UDim2.new(0, 80, 0, 28), function()
+                GotoPlayer(player)
+                Notify("Téléporté vers " .. player.DisplayName, 2, Colors.Success)
+            end, "Téléporter vers ce joueur")
+            btnTP.Position = UDim2.new(1, -88, 0, 46)
+            btnTP.Parent = card
+            
+            -- Bouton SPY
+            local btnSpy = CreateButton("🧠", UDim2.new(0, 35, 0, 28), function()
+                OpenSpyWindow(player)
+            end, "Ouvrir la fenêtre SPY")
+            btnSpy.Position = UDim2.new(0, 8, 0, 46)
+            btnSpy.Parent = card
+        end
+        
+        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 16)
+    end
+    
+    UpdateTop10Banner()
+    
+    -- Update toutes les 5 secondes
+    local connection = RunService.Heartbeat:Connect(function()
+        task.wait(5)
+        UpdateTop10Banner()
+    end)
+    
+    screenGui.AncestryChanged:Connect(function(_, parent)
+        if not parent then connection:Disconnect() end
+    end)
+    
+    Top10KDBanner = screenGui
+end
+
 -- ═══════════════════════════════════════════════════════════
 --                    INITIALISATION
 -- ═══════════════════════════════════════════════════════════
@@ -3416,6 +3660,7 @@ end)
 task.spawn(function()
     task.wait(1)
     CreateWatchBanner()
+    CreateTop10KDBanner()
 end)
 
 -- Message final
